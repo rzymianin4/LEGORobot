@@ -1,0 +1,64 @@
+Uwagi ogólne:
+	-> układ jednostek: centymetry, radiany, sekondy
+	-> kierunek obrotu: +\fi -- obrót w lewo (w kierunku ujemnym osi y, jeśli twarządo x)
+	-> make_step(bool), make_rot_step(bool) - 0 to "+" (do przodu/w lewo), 1 to "-" (do tyłu/w prawo)
+	-> wyciąganie koloru z past_path, nie na bierząco
+	-> w ruchu do tyłu założone odchylanie w 2. stronę (łuk)      Robot.cpp::24
+	-> w ruchu założono, że kąt do pozycji dodawany jest po stepie      Robotcpp::24
+	-> angle i colour woddzielnych plikach "instrumental_package"
+
+Nowości/zmiany: (27.03)
+	-> funkcje ruchu nie są typu void, lecz zwracają past_path, który będzieprzechowywany
+	   w Controler (jakby nie patrzyć to nie jest część robota)
+	-> past_path przechowuje kolory i inty (liczba kroków na danymkolorze)
+	-> dwa rodzaje ruchów (przeciążone funkcje) - opis poniżej.
+	-> dwie funkcje scan_pp(...), przeciążone,jakopomocniczedoruchów (sprawdzają warunek zakonczenia)
+	-> funkcja align()  - opis poniżej.
+
+Nowości/zmiany: (29.03)
+	-> funkcja colour move(std::pair<double, double>&) - opis poniżej.
+	-> funkca move(double) nie zwraca już past_path, ale jest typu void
+	-> funkcja void turn(angle) przeniesiona do private (od tej pory tylko jako pomocnicza)
+	-> funkcje system_move(double), system_turn(double) do napisania dla Ciebie, Michał.
+	   to mają być te funkcje które robią mniejszy poślizg na symulatorze i tylko ruszaj robotem
+	   funkcje turn(double) i move(angle) będą z nich korzystać i dodatkowo zmieniać w pamięci pozycje robota
+	-> w pliku Controler funkcja sequence() nie skręca pod kątem prostym, ale jakby po trapezie, aby zagwarantować,
+	   że skaner koloru wyląduje zawsze przed czarną linią (jakby wylądował po, to wszystko wpisdu...)
+	-> funkcja beep_tour(), może mieć niezrozumiałego ifa. enum colour był od początku robiony umyslnie tak, alby:
+	   black = 0, zatem if(col) zwraca prawde jesli jestesmy na polu a nie na lini,
+	   white = -1, r=1, g=2, b=3, zatem if(col>0) zwraca jesli jestesmy na niekolorowym polu, pola są po kolei RGB
+	   zatem wywołujemy funkcje jedź_do ona zwraca kolor na kttórym jesteśmy, jeśli jest i+1 (czyli po kolei tak
+	   jak mamy piszczeć), to piszczymy. Nie przewiduje, zebyśmy nie byli - ten else tam... on powinien robić:
+	   cout << APOKALIPSA!!! << endl; exit(-1); :P
+
+Nowości/zmiany: (29.03)
+	-> w pliku Controler funkcja scan_map() wykonuje sekwencje 4 razy a następnie jedzie po prostu do przodu,
+	   zatem kończy w rogu a nie pole wyżej tak jak przewidywałem
+	-> funkcja get_position() w Robot.h Tak w imie idei pisania eleganckiego kodu -- parametry chowa sie do private...
+	   (uzyskanie danych bedzie potrzebne w funkcji road_maker(std::pair<int, int>*) )
+
+ważne funkcje:
+	
+	void align():
+		wyrównuje robota do najbliższego kierunku prostego (0, PI/2, PI, 3PI/4).
+
+	... move(double):   NIEAKTUALNE !!!
+		jako arg pobiera odległość o którą ma się ruszyć. nawet jak jedzie do tyłu tworzy
+		normalnego past_path (tak jakby jechal doprzodu). nie powinno zrobić róznicy
+		nie używa align() na wypadek jakbysmy chcieli jechac na ukos (a głownie do tego to będzie)
+AKTUAL: tylko rusza robotem i zmienia położenie w pamięci. Zostaje w public, bo potrzebna 1 raz na początku
+		skanowania mapy do cofnięcia się
+
+	... move(colour, int):
+		jak mówiliśmy: przykładowo (black, 5) jedzie do zauwazenia 5. raz czarnego.
+		(ofc zobaczenie n razy z rzedu liczy sie jako jedno)
+Robot.cpp::49	za każdym razem jak widzi czarne po raz pierwszy używa align(). krótko mowiac idea jest taka
+		że jak bedzie jechał 5 pól doprzodu to na każdym czarnym wyrówna się, zatem nie zjedzietak bardzo
+
+	colour move(std::pair<double, double>&):   DO SPRAWDZENIA!!!!!
+		kolejna funkcja ruchu. lepsiejszy ruch. przyjmuje współrzędne celu, obraca się i tam jedzie.
+		uwzględnia odcylenie, tj ustawia sie i jedzie tak, ze wie ze jedzie po luku a nie prostej.
+		
+	void turn(angle):
+		co tu tłumaczyć. tylko obraca. 3 linijki :P
+
